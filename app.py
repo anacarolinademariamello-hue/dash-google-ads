@@ -52,7 +52,7 @@ st.markdown("""
 
 div.stButton > button {
   background: linear-gradient(135deg, #003f7c, #1a5a9a);
-  color: #fff;
+  color: #fff !important;
   border: none;
   border-radius: 10px;
   font-weight: 700;
@@ -60,6 +60,11 @@ div.stButton > button {
   width: 100%;
 }
 div.stButton > button:hover { opacity: .9; }
+div.stButton > button:disabled {
+  background: #e5e7eb !important;
+  color: #9ca3af !important;
+  cursor: not-allowed;
+}
 
 .metric-box {
   background: #fff;
