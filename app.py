@@ -344,90 +344,49 @@ with tab_report:
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab_clients:
-    st.markdown("### 👥 Gerenciar Clientes Google Ads")
+    st.markdown("### 👥 Clientes")
 
-    if not supabase_db.is_configured():
-        st.warning("⚠️ Supabase não configurado. Configure `supabase_url` e `supabase_service_key` nos secrets.")
-    else:
-        # Lista clientes existentes
-        clients = _load_clients()
-        if clients:
-            st.markdown(f"**{len(clients)} cliente(s) cadastrado(s):**")
-            for c in clients:
-                with st.expander(f"📋 {c['name']}"):
-                    col_info, col_action = st.columns([4, 1])
-                    with col_info:
-                        st.markdown(f"**Key:** `{c['key']}`")
-                        if c.get("industry"):
-                            st.markdown(f"**Setor:** {c['industry']}")
-                        if c.get("notes"):
-                            st.markdown(f"**Observações:** {c['notes']}")
-                        goals = c.get("goals") or {}
-                        if goals:
-                            goal_parts = []
-                            if goals.get("target_ctr"):  goal_parts.append(f"CTR alvo: {goals['target_ctr']}%")
-                            if goals.get("target_cpa"):  goal_parts.append(f"CPA alvo: R${goals['target_cpa']}")
-                            if goals.get("target_roas"): goal_parts.append(f"ROAS alvo: {goals['target_roas']}x")
-                            if goals.get("max_cpc"):     goal_parts.append(f"CPC máx: R${goals['max_cpc']}")
-                            if goal_parts:
-                                st.markdown("**Metas:** " + " · ".join(goal_parts))
-                    with col_action:
-                        if st.button("🗑️ Desativar", key=f"del_{c['key']}"):
-                            ok, msg = supabase_db.deactivate_client(c["key"])
-                            if ok:
-                                _load_clients.clear()
-                                st.success(msg)
-                                st.rerun()
-                            else:
-                                st.error(msg)
-        else:
-            st.info("Nenhum cliente cadastrado ainda.")
+    st.markdown(
+        '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:18px 22px;margin-bottom:24px;">'
+        '<div style="font-weight:700;color:#1e40af;margin-bottom:6px;">📋 Gerenciamento centralizado</div>'
+        '<div style="font-size:.88rem;color:#374151;line-height:1.7;">'
+        'Os clientes são cadastrados e gerenciados no <strong>Gerenciador de Clientes</strong>, '
+        'a central de todos os apps da Dash Digital. Clientes sem Instagram/Meta Ads '
+        'funcionam normalmente aqui — basta deixar esses campos em branco no cadastro.'
+        '</div>'
+        '<div style="margin-top:14px;">'
+        '<a href="https://dash-clientes-app.streamlit.app/" target="_blank" '
+        'style="background:#003f7c;color:#fff;padding:9px 20px;border-radius:8px;'
+        'text-decoration:none;font-weight:700;font-size:.88rem;">👥 Abrir Gerenciador de Clientes →</a>'
+        '</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
-        st.markdown("---")
-        st.markdown("### ➕ Cadastrar Novo Cliente")
-
-        with st.form("form_new_client", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            with col1:
-                new_name     = st.text_input("Nome do cliente *", placeholder="Ex: Loja ABC")
-                new_key      = st.text_input("Key (identificador único) *", placeholder="loja-abc")
-                new_industry = st.text_input("Setor / Indústria", placeholder="E-commerce, Educação, Saúde...")
-            with col2:
-                new_notes      = st.text_area("Observações", placeholder="Informações relevantes sobre o cliente...")
-                st.markdown("**Metas (opcional)**")
-                g_col1, g_col2 = st.columns(2)
-                with g_col1:
-                    goal_ctr  = st.number_input("CTR alvo (%)", min_value=0.0, step=0.1, value=0.0)
-                    goal_cpa  = st.number_input("CPA alvo (R$)", min_value=0.0, step=1.0, value=0.0)
-                with g_col2:
-                    goal_roas = st.number_input("ROAS alvo (x)", min_value=0.0, step=0.1, value=0.0)
-                    goal_cpc  = st.number_input("CPC máx. (R$)", min_value=0.0, step=0.1, value=0.0)
-
-            submitted = st.form_submit_button("💾 Cadastrar Cliente")
-            if submitted:
-                if not new_name or not new_key:
-                    st.error("Nome e Key são obrigatórios.")
-                else:
-                    goals = {}
-                    if goal_ctr > 0:  goals["target_ctr"]  = goal_ctr
-                    if goal_cpa > 0:  goals["target_cpa"]  = goal_cpa
-                    if goal_roas > 0: goals["target_roas"] = goal_roas
-                    if goal_cpc > 0:  goals["max_cpc"]     = goal_cpc
-
-                    ok, msg = supabase_db.save_client({
-                        "key":      new_key.strip().lower().replace(" ", "-"),
-                        "name":     new_name.strip(),
-                        "industry": new_industry.strip(),
-                        "goals":    goals,
-                        "notes":    new_notes.strip(),
-                        "active":   True,
-                    })
-                    if ok:
-                        _load_clients.clear()
-                        st.success(msg)
-                        st.rerun()
+    # Lista os clientes já cadastrados (leitura)
+    clients = _load_clients()
+    if clients:
+        st.markdown(f"**{len(clients)} cliente(s) disponível(is) neste app:**")
+        for c in clients:
+            with st.expander(f"📋 {c['name']}"):
+                st.markdown(f"**Key:** `{c['key']}`")
+                if c.get("industry"):
+                    st.markdown(f"**Nicho:** {c['industry']}")
+                if c.get("notes"):
+                    st.markdown(f"**Observações:** {c['notes']}")
+                goals = c.get("goals") or {}
+                if goals:
+                    goal_parts = []
+                    if goals.get("target_ctr"):  goal_parts.append(f"CTR alvo: {goals['target_ctr']}%")
+                    if goals.get("target_cpa"):  goal_parts.append(f"CPA alvo: R${goals['target_cpa']}")
+                    if goals.get("target_roas"): goal_parts.append(f"ROAS alvo: {goals['target_roas']}x")
+                    if goals.get("max_cpc"):     goal_parts.append(f"CPC máx: R${goals['max_cpc']}")
+                    if goal_parts:
+                        st.markdown("**Metas Google Ads:** " + " · ".join(goal_parts))
                     else:
-                        st.error(msg)
+                        st.caption("Sem metas Google Ads configuradas. Edite o cliente no Gerenciador para adicionar.")
+    else:
+        st.info("Nenhum cliente cadastrado ainda. Acesse o Gerenciador de Clientes para cadastrar.")
 
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -84,75 +84,44 @@ def _rest(table: str) -> str:
 
 def get_clients() -> list[dict]:
     """
-    Carrega clientes ativos do Google Ads.
-    Retorna lista de dicts com: key, name, industry, goals, notes
+    Carrega clientes ativos da tabela central `clients`
+    (a mesma usada pelo Gerenciador de Clientes e pelo Relatórios da Meta).
+    Clientes sem instagram_id funcionam normalmente aqui — o Google Ads
+    só usa key, name, nicho (→ industry) e goals.
     """
     if not is_configured():
         return []
     try:
         resp = requests.get(
-            _rest("google_ads_clients"),
+            _rest("clients"),
             headers=_headers(),
             params={
                 "active": "eq.true",
                 "order":  "name.asc",
-                "select": "key,name,industry,goals,notes",
+                "select": "key,name,nicho,goals,observations",
             },
             timeout=10,
         )
         resp.raise_for_status()
         rows = resp.json()
+        result = []
         for r in rows:
-            if isinstance(r.get("goals"), str):
+            goals = r.get("goals") or {}
+            if isinstance(goals, str):
                 try:
-                    r["goals"] = json.loads(r["goals"])
+                    goals = json.loads(goals)
                 except Exception:
-                    r["goals"] = {}
-        return rows
+                    goals = {}
+            result.append({
+                "key":      r["key"],
+                "name":     r["name"],
+                "industry": r.get("nicho") or "",   # nicho → industry
+                "goals":    goals,
+                "notes":    r.get("observations") or "",
+            })
+        return result
     except Exception:
         return []
-
-
-def save_client(data: dict) -> tuple[bool, str]:
-    """
-    Insere ou atualiza um cliente (upsert por key).
-    data: {key, name, industry, goals, notes}
-    Retorna (success, message).
-    """
-    if not is_configured():
-        return False, "Supabase não configurado."
-    try:
-        resp = requests.post(
-            _rest("google_ads_clients"),
-            headers={**_headers(), "Prefer": "resolution=merge-duplicates,return=minimal"},
-            params={"on_conflict": "key"},
-            json=data,
-            timeout=10,
-        )
-        if resp.status_code in (200, 201, 204):
-            return True, f"Cliente '{data.get('name', '')}' salvo com sucesso."
-        return False, f"Erro {resp.status_code}: {resp.text}"
-    except Exception as e:
-        return False, f"Erro: {e}"
-
-
-def deactivate_client(key: str) -> tuple[bool, str]:
-    """Soft delete: marca cliente como inativo."""
-    if not is_configured():
-        return False, "Supabase não configurado."
-    try:
-        resp = requests.patch(
-            _rest("google_ads_clients"),
-            headers=_headers("return=minimal"),
-            params={"key": f"eq.{key}"},
-            json={"active": False},
-            timeout=10,
-        )
-        if resp.status_code in (200, 204):
-            return True, "Cliente desativado."
-        return False, f"Erro {resp.status_code}: {resp.text}"
-    except Exception as e:
-        return False, f"Erro: {e}"
 
 
 # ── Histórico de relatórios ────────────────────────────────────────────────────
