@@ -36,7 +36,7 @@ def _header(client: dict, data: dict, generated_at: str) -> str:
     return f"""
   <div class="report-header">
     <div class="header-content">
-      <div class="header-icon">🟡</div>
+      <div class="header-icon">📊</div>
       <div>
         <h1 class="client-name">{name}</h1>
         {f'<div class="client-industry">{industry}</div>' if industry else ''}
@@ -429,8 +429,8 @@ def _footer(client: dict, data: dict) -> str:
 
 _CSS = """
 :root {
-  --brand-primary:   #f59e0b;  /* amarelo Google Ads */
-  --brand-dark:      #92400e;
+  --brand-primary:   #f8b940;  /* gold Dash Digital */
+  --brand-dark:      #003f7c;  /* azul Dash Digital */
   --brand-blue:      #003f7c;
   --text-primary:    #111827;
   --text-secondary:  #6b7280;
@@ -453,7 +453,7 @@ body {
 
 /* Header */
 .report-header {
-  background: linear-gradient(135deg, #92400e, #f59e0b);
+  background: linear-gradient(135deg, #003f7c, #1a5a9a);
   border-radius: 16px;
   padding: 32px 36px;
   color: #fff;
@@ -484,7 +484,7 @@ body {
 .section-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--brand-blue);
+  color: var(--brand-dark);
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 2px solid var(--brand-primary);
@@ -504,7 +504,7 @@ body {
   text-align: center;
 }
 .kpi-icon { font-size: 1.4rem; display: block; margin-bottom: 6px; }
-.kpi-val  { font-size: 1.5rem; font-weight: 800; color: var(--brand-blue); }
+.kpi-val  { font-size: 1.5rem; font-weight: 800; color: var(--brand-dark); }
 .kpi-label { font-size: .78rem; color: var(--text-secondary); margin: 4px 0 6px; }
 .kpi-badge {
   display: inline-block;

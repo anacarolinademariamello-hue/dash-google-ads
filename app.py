@@ -27,7 +27,7 @@ from src import health_score as hs
 
 st.set_page_config(
     page_title="Google Ads Reports · Dash Digital",
-    page_icon="🟡",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -46,12 +46,12 @@ st.markdown("""
   font-weight: 600;
 }
 .stTabs [aria-selected="true"] {
-  background: #f59e0b;
+  background: #003f7c;
   color: #fff;
 }
 
 div.stButton > button {
-  background: linear-gradient(135deg, #92400e, #f59e0b);
+  background: linear-gradient(135deg, #003f7c, #1a5a9a);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -68,7 +68,7 @@ div.stButton > button:hover { opacity: .9; }
   padding: 14px 16px;
   text-align: center;
 }
-.metric-val { font-size: 1.4rem; font-weight: 800; color: #92400e; }
+.metric-val { font-size: 1.4rem; font-weight: 800; color: #003f7c; }
 .metric-lbl { font-size: .75rem; color: #6b7280; margin-top: 3px; }
 
 .info-box {
@@ -113,10 +113,10 @@ def _load_clients():
 # Cabeçalho
 col_logo, col_title = st.columns([1, 8])
 with col_logo:
-    st.markdown("<div style='font-size:2.8rem;line-height:1;padding-top:8px;'>🟡</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:2.8rem;line-height:1;padding-top:8px;'>📊</div>", unsafe_allow_html=True)
 with col_title:
     st.markdown(
-        "<h1 style='margin:0;font-size:1.6rem;color:#92400e;'>Google Ads Reports</h1>"
+        "<h1 style='margin:0;font-size:1.6rem;color:#003f7c;'>Google Ads Reports</h1>"
         "<div style='color:#6b7280;font-size:.85rem;margin-top:2px;'>Dash Digital · Relatórios de campanhas Google Ads</div>",
         unsafe_allow_html=True,
     )
@@ -224,6 +224,7 @@ with tab_report:
                 )
                 health = hs.calculate(data, prev_metrics)
 
+            st.markdown("#### 🏥 Score de Saúde das Campanhas")
             score_col, grade_col = st.columns([1, 3])
             with score_col:
                 score_color = health["color"]
