@@ -15,6 +15,7 @@ def _build_prompt(data: dict, client: dict, prev_metrics: dict | None) -> str:
     industry = client.get("industry", "")
     goals    = client.get("goals") or {}
     period   = data.get("period_label", "")
+    gads_id  = client.get("google_ads_account_id", "")
 
     def _br(v, d=0):
         try:
@@ -73,20 +74,18 @@ def _build_prompt(data: dict, client: dict, prev_metrics: dict | None) -> str:
             sign  = "+" if delta_pct >= 0 else ""
             prev_lines.append(f"- Custo: {sign}{delta_pct:.1f}% vs período anterior")
 
-    # Metas do cliente
+    # Metas do cliente (chaves salvas pelo Gerenciador de Clientes)
     goals_lines = []
-    for key, label, higher_is_better in [
-        ("target_ctr",  "CTR alvo (%)",         True),
-        ("target_cpa",  "CPA alvo (R$)",         False),
-        ("target_roas", "ROAS alvo (x)",          True),
-        ("max_cpc",     "CPC máximo (R$)",        False),
+    for goal_key, data_key, label, higher_is_better in [
+        ("gads_ctr_alvo",   "avg_ctr",       "CTR alvo (%)",      True),
+        ("gads_cpa_alvo",   "cost_per_conv", "CPA alvo (R$)",     False),
+        ("gads_roas_alvo",  "avg_roas",      "ROAS alvo (x)",     True),
+        ("gads_cpc_maximo", "avg_cpc",       "CPC máximo (R$)",   False),
     ]:
-        g = float(goals.get(key) or 0)
+        g = float(goals.get(goal_key) or 0)
         if g <= 0:
             continue
-        key_map = {"target_ctr": "avg_ctr", "target_cpa": "cost_per_conv",
-                   "target_roas": "avg_roas", "max_cpc": "avg_cpc"}
-        r = float(data.get(key_map.get(key, key), 0) or 0)
+        r = float(data.get(data_key, 0) or 0)
         if r > 0:
             met = (r >= g) if higher_is_better else (r <= g)
             status = "✅ dentro da meta" if met else "❌ fora da meta"
@@ -102,6 +101,7 @@ def _build_prompt(data: dict, client: dict, prev_metrics: dict | None) -> str:
 ## CLIENTE
 - Nome: {name}
 - Setor / Indústria: {industry or "Não informado"}
+- Conta Google Ads: {gads_id or "Não informado"}
 - Período: {period}
 
 ## MÉTRICAS DO PERÍODO

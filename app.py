@@ -47,9 +47,26 @@ st.markdown("""
 [data-testid="stSidebar"] .stFileUploader label,
 [data-testid="stSidebar"] .stMarkdown p,
 [data-testid="stSidebar"] .stMarkdown div { color: #cbd5e1 !important; }
+/* Upload dropzone com contraste na sidebar escura */
 [data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] {
   background: #1a3350 !important;
-  border-color: #2e5070 !important;
+  border: 2px dashed #4a7fa8 !important;
+  border-radius: 8px !important;
+}
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] *,
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] small,
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] span {
+  color: #94b8d4 !important;
+  fill: #94b8d4 !important;
+}
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] svg {
+  fill: #4a7fa8 !important;
+  stroke: #4a7fa8 !important;
+}
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] button {
+  background: #2e5070 !important;
+  color: #e2e8f0 !important;
+  border: 1px solid #4a7fa8 !important;
 }
 [data-testid="stSidebar"] [data-baseweb="select"] > div {
   background: #1a3350 !important;
@@ -162,12 +179,27 @@ with st.sidebar:
     clients_sidebar = _load_clients()
 
     if not clients_sidebar:
-        st.warning("Nenhum cliente cadastrado.")
+        st.markdown(
+            '<div style="background:#1a3350;border:1px solid #2e5070;border-radius:8px;'
+            'padding:12px;font-size:.82rem;color:#94b8d4;">'
+            '⚠️ Nenhum cliente com Google Ads configurado.<br>'
+            '<a href="https://dash-clientes-app.streamlit.app/" target="_blank" '
+            'style="color:#f8b940;">Cadastrar no Gerenciador →</a>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
         selected_client = None
     else:
         client_names = [c["name"] for c in clients_sidebar]
         chosen_name  = st.selectbox("Cliente", client_names)
         selected_client = next((c for c in clients_sidebar if c["name"] == chosen_name), None)
+        if selected_client and selected_client.get("google_ads_account_id"):
+            st.markdown(
+                f'<div style="font-size:.72rem;color:#64748b;margin-top:2px;">'
+                f'🔵 Conta: <code style="color:#94b8d4;">{selected_client["google_ads_account_id"]}</code>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
     st.markdown("---")
     st.markdown(
@@ -281,6 +313,16 @@ with tab_report:
         score_col, grade_col = st.columns([1, 3])
         with score_col:
             score_color = health["color"]
+            delta       = health.get("delta")
+            delta_html  = ""
+            if delta is not None:
+                d_sign  = "+" if delta >= 0 else ""
+                d_color = "#16a34a" if delta >= 0 else "#dc2626"
+                d_arrow = "▲" if delta >= 0 else "▼"
+                delta_html = (
+                    f'<div style="font-size:.75rem;font-weight:600;color:{d_color};margin-top:4px;">'
+                    f'{d_arrow} {d_sign}{delta} pts vs período anterior</div>'
+                )
             st.markdown(
                 f'<div style="text-align:center;background:#fff;border:2px solid {score_color};'
                 f'border-radius:12px;padding:20px;">'
@@ -288,6 +330,7 @@ with tab_report:
                 f'<div style="font-size:3rem;font-weight:800;color:{score_color};line-height:1.2;">'
                 f'{health["score"]}<span style="font-size:1rem;color:#9ca3af;">/100</span></div>'
                 f'<div style="font-weight:700;color:{score_color};">{health["grade"]}</div>'
+                f'{delta_html}'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -378,9 +421,36 @@ with tab_report:
                     health_score = health["score"],
                 )
                 if ok:
-                    st.markdown('<div class="success-box">✅ Salvo no histórico do Supabase!</div>', unsafe_allow_html=True)
+                    st.markdown(
+                        '<div class="success-box">'
+                        '✅ <strong>Salvo no histórico!</strong> '
+                        'No próximo relatório deste cliente, o Score de Saúde e a Análise IA '
+                        'usarão automaticamente estes dados como comparativo de período anterior.'
+                        '</div>',
+                        unsafe_allow_html=True,
+                    )
                 else:
                     st.error("❌ Falha ao salvar. Verifique as credenciais do Supabase.")
+
+        # Aviso de histórico disponível / ausente
+        if prev_metrics:
+            st.markdown(
+                '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;'
+                'padding:10px 14px;font-size:.8rem;color:#1e40af;margin-top:8px;">'
+                '📊 <strong>Dados históricos encontrados.</strong> '
+                'O Score de Saúde e a Análise IA já incluem comparativo com o período anterior.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                '<div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;'
+                'padding:10px 14px;font-size:.8rem;color:#6b7280;margin-top:8px;">'
+                '💡 <strong>Primeiro relatório deste cliente.</strong> '
+                'Salve-o no histórico para que o próximo relatório tenha comparativo automático e análise IA mais precisa.'
+                '</div>',
+                unsafe_allow_html=True,
+            )
 
         # Preview do relatório
         with st.expander("👁️ Pré-visualizar relatório", expanded=False):

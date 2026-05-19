@@ -84,10 +84,8 @@ def _rest(table: str) -> str:
 
 def get_clients() -> list[dict]:
     """
-    Carrega clientes ativos da tabela central `clients`
-    (a mesma usada pelo Gerenciador de Clientes e pelo Relatórios da Meta).
-    Clientes sem instagram_id funcionam normalmente aqui — o Google Ads
-    só usa key, name, nicho (→ industry) e goals.
+    Carrega clientes ativos da tabela central `clients` que possuem
+    google_ads_account_id preenchido — só esses aparecem no app Google Ads.
     """
     if not is_configured():
         return []
@@ -96,9 +94,10 @@ def get_clients() -> list[dict]:
             _rest("clients"),
             headers=_headers(),
             params={
-                "active": "eq.true",
-                "order":  "name.asc",
-                "select": "key,name,nicho,goals,observations",
+                "active":                 "eq.true",
+                "google_ads_account_id":  "neq.",          # só quem tem ID preenchido
+                "order":                  "name.asc",
+                "select":                 "key,name,nicho,goals,observations,google_ads_account_id",
             },
             timeout=10,
         )
@@ -113,11 +112,12 @@ def get_clients() -> list[dict]:
                 except Exception:
                     goals = {}
             result.append({
-                "key":      r["key"],
-                "name":     r["name"],
-                "industry": r.get("nicho") or "",   # nicho → industry
-                "goals":    goals,
-                "notes":    r.get("observations") or "",
+                "key":                   r["key"],
+                "name":                  r["name"],
+                "industry":              r.get("nicho") or "",   # nicho → industry
+                "goals":                 goals,
+                "notes":                 r.get("observations") or "",
+                "google_ads_account_id": r.get("google_ads_account_id") or "",
             })
         return result
     except Exception:
