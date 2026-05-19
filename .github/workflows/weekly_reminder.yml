@@ -1,0 +1,33 @@
+name: Google Ads — Lembrete Semanal de Upload
+
+on:
+  schedule:
+    # Toda segunda-feira às 12:00 UTC (09:00 BRT)
+    - cron: '0 12 * * 1'
+  workflow_dispatch:  # Permite disparo manual pelo GitHub UI
+
+jobs:
+  send-reminder:
+    name: Enviar lembrete de upload Google Ads
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependências
+        run: pip install requests
+
+      - name: Enviar lembrete semanal
+        env:
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GMAIL_USER:           ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD:   ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_TO:             ${{ secrets.EMAIL_TO }}
+        run: python scripts/weekly_reminder.py
