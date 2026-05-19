@@ -2,7 +2,7 @@
 app.py — Dash Google Ads · Relatório de campanhas Google Ads
 
 Fluxo:
-  1. Seleciona cliente (cadastrado no Supabase)
+  1. Seleciona cliente (cadastrado no Supabase via Gerenciador de Clientes)
   2. Faz upload do CSV exportado do Google Ads Manager
   3. Clica em "Gerar Relatório"
   4. Visualiza o relatório + Score de Saúde + Análise IA
@@ -10,7 +10,6 @@ Fluxo:
 
 Tabs:
   📊 Relatório    — gerar e visualizar
-  👥 Clientes     — cadastrar / gerenciar clientes Google Ads
   📜 Histórico    — relatórios anteriores do cliente
 """
 from __future__ import annotations
@@ -36,9 +35,40 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+/* ── Fundo geral ────────────────────────────────── */
 [data-testid="stAppViewContainer"] { background: #f0f3f8; }
-[data-testid="stSidebar"] { background: #fff; border-right: 1px solid #e5e7eb; }
 
+/* ── Sidebar escura (mesmo padrão do Relatório Meta) */
+[data-testid="stSidebar"] {
+  background: #0d2137 !important;
+}
+[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stFileUploader label,
+[data-testid="stSidebar"] .stMarkdown p,
+[data-testid="stSidebar"] .stMarkdown div { color: #cbd5e1 !important; }
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] {
+  background: #1a3350 !important;
+  border-color: #2e5070 !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] > div {
+  background: #1a3350 !important;
+  border-color: #2e5070 !important;
+  color: #e2e8f0 !important;
+}
+[data-testid="stSidebar"] hr { border-color: #2e5070 !important; }
+[data-testid="stSidebar"] .stButton > button {
+  background: linear-gradient(135deg, #f8b940, #d99a20) !important;
+  color: #003f7c !important;
+  border: none !important;
+  font-weight: 700 !important;
+}
+[data-testid="stSidebar"] .stButton > button:disabled {
+  background: #2e5070 !important;
+  color: #6b8aa8 !important;
+}
+
+/* ── Tabs ──────────────────────────────────────── */
 .stTabs [data-baseweb="tab-list"] { gap: 4px; }
 .stTabs [data-baseweb="tab"] {
   border-radius: 8px;
@@ -50,6 +80,7 @@ st.markdown("""
   color: #fff;
 }
 
+/* ── Botões na área principal ──────────────────── */
 div.stButton > button {
   background: linear-gradient(135deg, #003f7c, #1a5a9a);
   color: #fff !important;
@@ -66,6 +97,7 @@ div.stButton > button:disabled {
   cursor: not-allowed;
 }
 
+/* ── Cards de métricas ─────────────────────────── */
 .metric-box {
   background: #fff;
   border: 1px solid #e5e7eb;
@@ -76,6 +108,7 @@ div.stButton > button:disabled {
 .metric-val { font-size: 1.4rem; font-weight: 800; color: #003f7c; }
 .metric-lbl { font-size: .75rem; color: #6b7280; margin-top: 3px; }
 
+/* ── Avisos ────────────────────────────────────── */
 .info-box {
   background: #fffbeb;
   border: 1px solid #fcd34d;
@@ -113,6 +146,59 @@ def _load_clients():
     return supabase_db.get_clients()
 
 
+# ── Sidebar ─────────────────────────────────────────────────────────────────────
+
+with st.sidebar:
+    st.markdown(
+        "<div style='padding:16px 4px 12px;'>"
+        "<span style='font-size:1.5rem;'>📊</span> "
+        "<span style='font-size:1.1rem;font-weight:800;color:#f8b940;'>Google Ads</span>"
+        "<br><span style='font-size:.75rem;color:#94a3b8;'>Dash Digital · Relatórios</span>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("---")
+
+    clients_sidebar = _load_clients()
+
+    if not clients_sidebar:
+        st.warning("Nenhum cliente cadastrado.")
+        selected_client = None
+    else:
+        client_names = [c["name"] for c in clients_sidebar]
+        chosen_name  = st.selectbox("Cliente", client_names)
+        selected_client = next((c for c in clients_sidebar if c["name"] == chosen_name), None)
+
+    st.markdown("---")
+    st.markdown(
+        "<div style='font-size:.78rem;color:#94a3b8;margin-bottom:6px;'>"
+        "<strong style='color:#cbd5e1;'>📂 Upload do CSV</strong><br>"
+        "Exporte pelo Google Ads Manager:<br>"
+        "<strong>Relatórios → Pré-definidos → Desempenho → Campanha</strong><br>"
+        "Selecione o período e baixe como CSV."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    uploaded_file = st.file_uploader(
+        "Arquivo CSV do Google Ads",
+        type=["csv"],
+        label_visibility="collapsed",
+    )
+
+    st.markdown("---")
+    gerar = st.button("🚀 Gerar Relatório", disabled=(not selected_client or not uploaded_file))
+
+    st.markdown("---")
+    st.markdown(
+        "<div style='font-size:.72rem;color:#64748b;'>"
+        "Clientes gerenciados no "
+        "<a href='https://dash-clientes-app.streamlit.app/' target='_blank' "
+        "style='color:#f8b940;'>Gerenciador de Clientes</a>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+
 # ── Layout ─────────────────────────────────────────────────────────────────────
 
 # Cabeçalho
@@ -129,7 +215,7 @@ with col_title:
 st.divider()
 
 # Tabs principais
-tab_report, tab_clients, tab_history = st.tabs(["📊 Relatório", "👥 Clientes", "📜 Histórico"])
+tab_report, tab_history = st.tabs(["📊 Relatório", "📜 Histórico"])
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -137,260 +223,172 @@ tab_report, tab_clients, tab_history = st.tabs(["📊 Relatório", "👥 Cliente
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab_report:
-    col_sidebar, col_main = st.columns([1, 3], gap="large")
-
-    # ── Painel lateral ────────────────────────────────────────────────────────
-    with col_sidebar:
-        st.markdown("### ⚙️ Configuração")
-
-        clients = _load_clients()
-
-        if not clients:
-            st.warning("Nenhum cliente cadastrado. Vá para a aba **👥 Clientes** para cadastrar.")
-            selected_client = None
-        else:
-            client_names = [c["name"] for c in clients]
-            chosen_name  = st.selectbox("Cliente", client_names)
-            selected_client = next((c for c in clients if c["name"] == chosen_name), None)
-
-        st.markdown("---")
-        st.markdown("**📂 Upload do CSV**")
+    if not selected_client:
         st.markdown(
-            "<div style='font-size:.78rem;color:#6b7280;margin-bottom:8px;'>"
-            "Exporte o relatório pelo Google Ads Manager:<br>"
-            "<strong>Relatórios → Pré-definidos → Desempenho → Campanha</strong><br>"
-            "Selecione o período e clique em Download (CSV)"
-            "</div>",
+            '<div class="info-box">👈 Selecione um cliente na barra lateral e faça upload do CSV para gerar o relatório.</div>',
             unsafe_allow_html=True,
         )
-
-        uploaded_file = st.file_uploader(
-            "Arquivo CSV do Google Ads",
-            type=["csv"],
-            label_visibility="collapsed",
+    elif not uploaded_file:
+        st.markdown(
+            '<div class="info-box">📂 Faça upload do CSV exportado do Google Ads Manager para continuar.</div>',
+            unsafe_allow_html=True,
         )
+    elif gerar:
+        with st.spinner("🔄 Processando CSV..."):
+            raw_content = uploaded_file.read()
+            parsed      = csv_parser.parse(raw_content)
 
-        st.markdown("---")
-        gerar = st.button("🚀 Gerar Relatório", disabled=(not selected_client or not uploaded_file))
+        # Avisos do parser
+        for w in parsed.get("warnings", []):
+            st.warning(w)
 
-    # ── Área principal ────────────────────────────────────────────────────────
-    with col_main:
-        if not selected_client:
-            st.markdown(
-                '<div class="info-box">👈 Selecione um cliente e faça upload do CSV para gerar o relatório.</div>',
-                unsafe_allow_html=True,
-            )
-        elif not uploaded_file:
-            st.markdown(
-                '<div class="info-box">📂 Faça upload do CSV exportado do Google Ads Manager para continuar.</div>',
-                unsafe_allow_html=True,
-            )
-        elif gerar:
-            with st.spinner("🔄 Processando CSV..."):
-                raw_content = uploaded_file.read()
-                parsed      = csv_parser.parse(raw_content)
+        if not parsed["campaigns"]:
+            st.error("❌ Nenhuma campanha encontrada no CSV. Verifique o arquivo e tente novamente.")
+            st.stop()
 
-            # Avisos do parser
-            for w in parsed.get("warnings", []):
-                st.warning(w)
+        with st.spinner("📊 Calculando métricas..."):
+            data = processor.process(parsed)
 
-            if not parsed["campaigns"]:
-                st.error("❌ Nenhuma campanha encontrada no CSV. Verifique o arquivo e tente novamente.")
-                st.stop()
-
-            with st.spinner("📊 Calculando métricas..."):
-                data = processor.process(parsed)
-
-            # Preview rápido de métricas
-            st.markdown("#### 📈 Resumo do Período")
-            c1, c2, c3, c4, c5, c6 = st.columns(6)
-            metrics_preview = [
-                (c1, "Impressões", _br(data["total_impressions"])),
-                (c2, "Cliques",    _br(data["total_clicks"])),
-                (c3, "CTR",        f"{_br(data['avg_ctr'], 2)}%"),
-                (c4, "Investimento", f"R${_br(data['total_cost'], 2)}"),
-                (c5, "Conversões", _br(data["total_conversions"], 1)),
-                (c6, "CPC Médio",  f"R${_br(data['avg_cpc'], 2)}"),
-            ]
-            for col, label, val in metrics_preview:
-                with col:
-                    st.markdown(
-                        f'<div class="metric-box"><div class="metric-val">{val}</div>'
-                        f'<div class="metric-lbl">{label}</div></div>',
-                        unsafe_allow_html=True,
-                    )
-
-            # Score de saúde
-            with st.spinner("🏥 Calculando Score de Saúde..."):
-                prev_metrics = supabase_db.get_previous_metrics(
-                    selected_client["key"],
-                    data["date_from"] or datetime.now().strftime("%Y-%m-%d"),
-                    data["date_to"]   or datetime.now().strftime("%Y-%m-%d"),
-                )
-                health = hs.calculate(data, prev_metrics)
-
-            st.markdown("#### 🏥 Score de Saúde das Campanhas")
-            score_col, grade_col = st.columns([1, 3])
-            with score_col:
-                score_color = health["color"]
+        # Preview rápido de métricas
+        st.markdown("#### 📈 Resumo do Período")
+        c1, c2, c3, c4, c5, c6 = st.columns(6)
+        metrics_preview = [
+            (c1, "Impressões", _br(data["total_impressions"])),
+            (c2, "Cliques",    _br(data["total_clicks"])),
+            (c3, "CTR",        f"{_br(data['avg_ctr'], 2)}%"),
+            (c4, "Investimento", f"R${_br(data['total_cost'], 2)}"),
+            (c5, "Conversões", _br(data["total_conversions"], 1)),
+            (c6, "CPC Médio",  f"R${_br(data['avg_cpc'], 2)}"),
+        ]
+        for col, label, val in metrics_preview:
+            with col:
                 st.markdown(
-                    f'<div style="text-align:center;background:#fff;border:2px solid {score_color};'
-                    f'border-radius:12px;padding:20px;">'
-                    f'<div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Score de Saúde</div>'
-                    f'<div style="font-size:3rem;font-weight:800;color:{score_color};line-height:1.2;">'
-                    f'{health["score"]}<span style="font-size:1rem;color:#9ca3af;">/100</span></div>'
-                    f'<div style="font-weight:700;color:{score_color};">{health["grade"]}</div>'
-                    f'</div>',
+                    f'<div class="metric-box"><div class="metric-val">{val}</div>'
+                    f'<div class="metric-lbl">{label}</div></div>',
                     unsafe_allow_html=True,
                 )
-            with grade_col:
-                bd = health.get("breakdown", {})
-                breakdown_labels = {
-                    "ctr":         ("CTR", 25),
-                    "conv_rate":   ("Taxa de conversão", 25),
-                    "roas":        ("ROAS", 20),
-                    "eficiencia":  ("Eficiência / CPA", 15),
-                    "consistencia": ("Consistência", 15),
-                }
-                for key, (label, max_pts) in breakdown_labels.items():
-                    val = bd.get(key, 0)
-                    pct = val / max_pts if max_pts else 0
-                    bar_color = "#16a34a" if pct >= .7 else "#d97706" if pct >= .4 else "#dc2626"
-                    st.markdown(
-                        f'<div style="margin-bottom:6px;">'
-                        f'<div style="display:flex;justify-content:space-between;font-size:.78rem;color:#6b7280;">'
-                        f'<span>{label}</span><span style="font-weight:700;color:#374151;">{val}/{max_pts}</span></div>'
-                        f'<div style="background:#f3f4f6;border-radius:4px;height:6px;margin-top:3px;">'
-                        f'<div style="background:{bar_color};width:{int(pct*100)}%;height:6px;border-radius:4px;"></div>'
-                        f'</div></div>',
-                        unsafe_allow_html=True,
-                    )
 
-            # Análise IA — tenta sempre que a ANTHROPIC_API_KEY estiver nos secrets
-            ai_result = None
-            with st.spinner("🤖 Gerando análise estratégica com IA..."):
-                ai_result = ai_analysis.generate_analysis(data, selected_client, prev_metrics)
+        # Score de saúde
+        with st.spinner("🏥 Calculando Score de Saúde..."):
+            prev_metrics = supabase_db.get_previous_metrics(
+                selected_client["key"],
+                data["date_from"] or datetime.now().strftime("%Y-%m-%d"),
+                data["date_to"]   or datetime.now().strftime("%Y-%m-%d"),
+            )
+            health = hs.calculate(data, prev_metrics)
 
-            if ai_result:
-                st.markdown("#### 🧭 Análise Estratégica (IA)")
-                col_str, col_att = st.columns(2)
-                with col_str:
-                    st.markdown("**✅ Pontos Fortes**")
-                    for emoji, text in ai_result.get("strengths", []):
-                        clean_text = re.sub(r"<[^>]+>", "", text)
-                        st.markdown(f"- {emoji} {clean_text}")
-                with col_att:
-                    st.markdown("**⚠️ Pontos de Atenção**")
-                    for emoji, text in ai_result.get("attentions", []):
-                        clean_text = re.sub(r"<[^>]+>", "", text)
-                        st.markdown(f"- {emoji} {clean_text}")
-
-            # Gera HTML do relatório
-            with st.spinner("🎨 Gerando relatório HTML..."):
-                generated_at = datetime.now().strftime("%d/%m/%Y às %H:%M")
-                html_report  = html_gen.generate(
-                    client=selected_client,
-                    data=data,
-                    health=health,
-                    ai_analysis=ai_result,
-                    generated_at=generated_at,
+        st.markdown("#### 🏥 Score de Saúde das Campanhas")
+        score_col, grade_col = st.columns([1, 3])
+        with score_col:
+            score_color = health["color"]
+            st.markdown(
+                f'<div style="text-align:center;background:#fff;border:2px solid {score_color};'
+                f'border-radius:12px;padding:20px;">'
+                f'<div style="font-size:.7rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Score de Saúde</div>'
+                f'<div style="font-size:3rem;font-weight:800;color:{score_color};line-height:1.2;">'
+                f'{health["score"]}<span style="font-size:1rem;color:#9ca3af;">/100</span></div>'
+                f'<div style="font-weight:700;color:{score_color};">{health["grade"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        with grade_col:
+            bd = health.get("breakdown", {})
+            breakdown_labels = {
+                "ctr":          ("CTR", 25),
+                "conv_rate":    ("Taxa de conversão", 25),
+                "roas":         ("ROAS", 20),
+                "eficiencia":   ("Eficiência / CPA", 15),
+                "consistencia": ("Consistência", 15),
+            }
+            for key, (label, max_pts) in breakdown_labels.items():
+                val = bd.get(key, 0)
+                pct = val / max_pts if max_pts else 0
+                bar_color = "#16a34a" if pct >= .7 else "#d97706" if pct >= .4 else "#dc2626"
+                st.markdown(
+                    f'<div style="margin-bottom:6px;">'
+                    f'<div style="display:flex;justify-content:space-between;font-size:.78rem;color:#6b7280;">'
+                    f'<span>{label}</span><span style="font-weight:700;color:#374151;">{val}/{max_pts}</span></div>'
+                    f'<div style="background:#f3f4f6;border-radius:4px;height:6px;margin-top:3px;">'
+                    f'<div style="background:{bar_color};width:{int(pct*100)}%;height:6px;border-radius:4px;"></div>'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
                 )
 
-            # Preview e Download
-            st.markdown("---")
-            col_dl, col_save = st.columns(2)
-            period_slug = data.get("period_label", "").replace("/", "-").replace(" ", "_").replace("–", "a")
-            filename    = f"google-ads_{selected_client['key']}_{period_slug}.html"
+        # Análise IA
+        ai_result = None
+        with st.spinner("🤖 Gerando análise estratégica com IA..."):
+            ai_result = ai_analysis.generate_analysis(data, selected_client, prev_metrics)
 
-            with col_dl:
-                st.download_button(
-                    label="⬇️ Baixar Relatório HTML",
-                    data=html_report.encode("utf-8"),
-                    file_name=filename,
-                    mime="text/html",
+        if ai_result:
+            st.markdown("#### 🧭 Análise Estratégica (IA)")
+            col_str, col_att = st.columns(2)
+            with col_str:
+                st.markdown("**✅ Pontos Fortes**")
+                for emoji, text in ai_result.get("strengths", []):
+                    clean_text = re.sub(r"<[^>]+>", "", text)
+                    st.markdown(f"- {emoji} {clean_text}")
+            with col_att:
+                st.markdown("**⚠️ Pontos de Atenção**")
+                for emoji, text in ai_result.get("attentions", []):
+                    clean_text = re.sub(r"<[^>]+>", "", text)
+                    st.markdown(f"- {emoji} {clean_text}")
+
+        # Gera HTML do relatório
+        with st.spinner("🎨 Gerando relatório HTML..."):
+            generated_at = datetime.now().strftime("%d/%m/%Y às %H:%M")
+            html_report  = html_gen.generate(
+                client=selected_client,
+                data=data,
+                health=health,
+                ai_analysis=ai_result,
+                generated_at=generated_at,
+            )
+
+        # Preview e Download
+        st.markdown("---")
+        col_dl, col_save = st.columns(2)
+        period_slug = data.get("period_label", "").replace("/", "-").replace(" ", "_").replace("–", "a")
+        filename    = f"google-ads_{selected_client['key']}_{period_slug}.html"
+
+        with col_dl:
+            st.download_button(
+                label="⬇️ Baixar Relatório HTML",
+                data=html_report.encode("utf-8"),
+                file_name=filename,
+                mime="text/html",
+            )
+
+        with col_save:
+            if st.button("💾 Salvar no Histórico"):
+                _ai_safe = None
+                if ai_result and isinstance(ai_result, dict):
+                    try:
+                        _ai_safe = {
+                            "strengths":  [[e, t] for e, t in (ai_result.get("strengths") or [])],
+                            "attentions": [[e, t] for e, t in (ai_result.get("attentions") or [])],
+                        }
+                    except Exception:
+                        pass
+                ok = supabase_db.save_report_metrics(
+                    client_key   = selected_client["key"],
+                    week_from    = data.get("date_from", ""),
+                    week_to      = data.get("date_to", ""),
+                    data         = data,
+                    ai_analysis  = _ai_safe,
+                    health_score = health["score"],
                 )
+                if ok:
+                    st.markdown('<div class="success-box">✅ Salvo no histórico do Supabase!</div>', unsafe_allow_html=True)
+                else:
+                    st.error("❌ Falha ao salvar. Verifique as credenciais do Supabase.")
 
-            with col_save:
-                if st.button("💾 Salvar no Histórico"):
-                    _ai_safe = None
-                    if ai_result and isinstance(ai_result, dict):
-                        try:
-                            _ai_safe = {
-                                "strengths":  [[e, t] for e, t in (ai_result.get("strengths") or [])],
-                                "attentions": [[e, t] for e, t in (ai_result.get("attentions") or [])],
-                            }
-                        except Exception:
-                            pass
-                    ok = supabase_db.save_report_metrics(
-                        client_key   = selected_client["key"],
-                        week_from    = data.get("date_from", ""),
-                        week_to      = data.get("date_to", ""),
-                        data         = data,
-                        ai_analysis  = _ai_safe,
-                        health_score = health["score"],
-                    )
-                    if ok:
-                        st.markdown('<div class="success-box">✅ Salvo no histórico do Supabase!</div>', unsafe_allow_html=True)
-                    else:
-                        st.error("❌ Falha ao salvar. Verifique as credenciais do Supabase.")
-
-            # Preview do relatório
-            with st.expander("👁️ Pré-visualizar relatório", expanded=False):
-                components.html(html_report, height=800, scrolling=True)
+        # Preview do relatório
+        with st.expander("👁️ Pré-visualizar relatório", expanded=False):
+            components.html(html_report, height=800, scrolling=True)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — CLIENTES
-# ══════════════════════════════════════════════════════════════════════════════
-
-with tab_clients:
-    st.markdown("### 👥 Clientes")
-
-    st.markdown(
-        '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:18px 22px;margin-bottom:24px;">'
-        '<div style="font-weight:700;color:#1e40af;margin-bottom:6px;">📋 Gerenciamento centralizado</div>'
-        '<div style="font-size:.88rem;color:#374151;line-height:1.7;">'
-        'Os clientes são cadastrados e gerenciados no <strong>Gerenciador de Clientes</strong>, '
-        'a central de todos os apps da Dash Digital. Clientes sem Instagram/Meta Ads '
-        'funcionam normalmente aqui — basta deixar esses campos em branco no cadastro.'
-        '</div>'
-        '<div style="margin-top:14px;">'
-        '<a href="https://dash-clientes-app.streamlit.app/" target="_blank" '
-        'style="background:#003f7c;color:#fff;padding:9px 20px;border-radius:8px;'
-        'text-decoration:none;font-weight:700;font-size:.88rem;">👥 Abrir Gerenciador de Clientes →</a>'
-        '</div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-    # Lista os clientes já cadastrados (leitura)
-    clients = _load_clients()
-    if clients:
-        st.markdown(f"**{len(clients)} cliente(s) disponível(is) neste app:**")
-        for c in clients:
-            with st.expander(f"📋 {c['name']}"):
-                st.markdown(f"**Key:** `{c['key']}`")
-                if c.get("industry"):
-                    st.markdown(f"**Nicho:** {c['industry']}")
-                if c.get("notes"):
-                    st.markdown(f"**Observações:** {c['notes']}")
-                goals = c.get("goals") or {}
-                if goals:
-                    goal_parts = []
-                    if goals.get("target_ctr"):  goal_parts.append(f"CTR alvo: {goals['target_ctr']}%")
-                    if goals.get("target_cpa"):  goal_parts.append(f"CPA alvo: R${goals['target_cpa']}")
-                    if goals.get("target_roas"): goal_parts.append(f"ROAS alvo: {goals['target_roas']}x")
-                    if goals.get("max_cpc"):     goal_parts.append(f"CPC máx: R${goals['max_cpc']}")
-                    if goal_parts:
-                        st.markdown("**Metas Google Ads:** " + " · ".join(goal_parts))
-                    else:
-                        st.caption("Sem metas Google Ads configuradas. Edite o cliente no Gerenciador para adicionar.")
-    else:
-        st.info("Nenhum cliente cadastrado ainda. Acesse o Gerenciador de Clientes para cadastrar.")
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 3 — HISTÓRICO
+# TAB 2 — HISTÓRICO
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab_history:
@@ -399,16 +397,16 @@ with tab_history:
     if not supabase_db.is_configured():
         st.warning("⚠️ Supabase não configurado.")
     else:
-        clients = _load_clients()
-        if not clients:
+        hist_clients = _load_clients()
+        if not hist_clients:
             st.info("Nenhum cliente cadastrado.")
         else:
             chosen_hist = st.selectbox(
                 "Cliente",
-                [c["name"] for c in clients],
+                [c["name"] for c in hist_clients],
                 key="hist_client",
             )
-            sel_hist = next((c for c in clients if c["name"] == chosen_hist), None)
+            sel_hist = next((c for c in hist_clients if c["name"] == chosen_hist), None)
 
             if sel_hist:
                 history = supabase_db.get_history_list(sel_hist["key"], limit=12)
@@ -420,17 +418,17 @@ with tab_history:
                         wt = entry.get("week_to", "")
                         gen = entry.get("generated_at", "")[:16].replace("T", " ") if entry.get("generated_at") else ""
                         m  = entry.get("metrics") or {}
-                        score     = m.get("health_score", 0)
+                        score       = m.get("health_score", 0)
                         score_color = "#16a34a" if score >= 70 else "#d97706" if score >= 55 else "#dc2626"
 
                         with st.expander(f"📅 {wf} → {wt}  |  Score: {score}/100  |  Gerado: {gen}"):
                             c1, c2, c3, c4, c5 = st.columns(5)
                             preview_metrics = [
-                                (c1, "Impressões",  _br(m.get("total_impressions", 0))),
-                                (c2, "Cliques",     _br(m.get("total_clicks", 0))),
-                                (c3, "CTR",         f"{_br(m.get('avg_ctr', 0), 2)}%"),
-                                (c4, "Investimento",f"R${_br(m.get('total_cost', 0), 2)}"),
-                                (c5, "Score",       f"{score}/100"),
+                                (c1, "Impressões",   _br(m.get("total_impressions", 0))),
+                                (c2, "Cliques",      _br(m.get("total_clicks", 0))),
+                                (c3, "CTR",          f"{_br(m.get('avg_ctr', 0), 2)}%"),
+                                (c4, "Investimento", f"R${_br(m.get('total_cost', 0), 2)}"),
+                                (c5, "Score",        f"{score}/100"),
                             ]
                             for col, label, val in preview_metrics:
                                 with col:
@@ -445,10 +443,10 @@ with tab_history:
                             camps = m.get("top_campaigns", [])
                             if camps:
                                 st.markdown("**Campanhas do período:**")
-                                for c in camps[:3]:
+                                for camp in camps[:3]:
                                     st.markdown(
-                                        f"- **{c.get('name','')}** — "
-                                        f"CTR {c.get('ctr',0):.2f}% | "
-                                        f"Custo R${c.get('cost',0):.2f} | "
-                                        f"Conv. {c.get('conversions',0):.1f}"
+                                        f"- **{camp.get('name','')}** — "
+                                        f"CTR {camp.get('ctr',0):.2f}% | "
+                                        f"Custo R${camp.get('cost',0):.2f} | "
+                                        f"Conv. {camp.get('conversions',0):.1f}"
                                     )
