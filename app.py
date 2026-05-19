@@ -55,18 +55,29 @@ st.markdown("""
 }
 [data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] *,
 [data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] small,
-[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] span {
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] span,
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] p {
   color: #94b8d4 !important;
-  fill: #94b8d4 !important;
 }
 [data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] svg {
-  fill: #4a7fa8 !important;
-  stroke: #4a7fa8 !important;
+  fill: #94b8d4 !important;
+  stroke: #94b8d4 !important;
 }
-[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] button {
-  background: #2e5070 !important;
-  color: #e2e8f0 !important;
-  border: 1px solid #4a7fa8 !important;
+/* Botão "Upload" dentro do dropzone — alvo por kind=secondary e por role=button */
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] button,
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] [role="button"],
+[data-testid="stSidebar"] [data-testid="stFileUploader"] button[kind="secondary"],
+[data-testid="stSidebar"] [data-testid="stFileUploader"] button {
+  background: #f8b940 !important;
+  color: #003f7c !important;
+  border: none !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  opacity: 1 !important;
+}
+[data-testid="stSidebar"] [data-testid="stFileUploader"] button span,
+[data-testid="stSidebar"] [data-testid="stFileUploadDropzone"] button span {
+  color: #003f7c !important;
 }
 [data-testid="stSidebar"] [data-baseweb="select"] > div {
   background: #1a3350 !important;
